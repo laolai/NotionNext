@@ -2,7 +2,7 @@
 const BLOG = {
   AUTHOR: 'Dobby', // 作者
   BIO: '一个普通的三和人🍚', // 作者简介
-  LINK: 'https://tieba.baidu.com/f?kw=%E4%B8%89%E5%92%8C%E5%A4%A7%E7%A5%9E&ie=utf-8', // 网站地址
+  LINK: 'https://dobby.870322.xyz', // 网站地址
   KEYWORDS: 'Notion, 博客', // 网站关键词 英文逗号隔开
   NOTION_PAGE_ID:
   process.env.NOTION_PAGE_ID || '02ab3b8678004aa69e9e415905ef32a5', // Important page_id！！！Duplicate Template from  https://www.notion.so/tanghh/02ab3b8678004aa69e9e415905ef32a5
