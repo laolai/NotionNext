@@ -1,14 +1,16 @@
 import { NotionRenderer } from 'react-notion-x'
 import dynamic from 'next/dynamic'
-import mediumZoom from '@fisch0920/medium-zoom'
-import React from 'react'
+// import mediumZoom from '@fisch0920/medium-zoom'
+import React, { useEffect } from 'react'
 import { isBrowser } from '@/lib/utils'
-import Image from 'next/image'
-import Link from 'next/link'
 import { Code } from 'react-notion-x/build/third-party/code'
+import TweetEmbed from 'react-tweet-embed'
+
+import 'katex/dist/katex.min.css'
+import { mapImgUrl } from '@/lib/notion/mapImage'
 
 const Equation = dynamic(() =>
-  import('react-notion-x/build/third-party/equation').then(async (m) => {
+  import('@/components/Equation').then(async (m) => {
     // 化学方程式
     await import('@/lib/mhchem')
     return m.Equation
@@ -24,7 +26,7 @@ const Pdf = dynamic(
 // https://github.com/txs
 // import PrismMac from '@/components/PrismMac'
 const PrismMac = dynamic(() => import('@/components/PrismMac'), {
-  ssr: false
+  ssr: true
 })
 
 const Collection = dynamic(() =>
@@ -35,17 +37,21 @@ const Modal = dynamic(
   () => import('react-notion-x/build/third-party/modal').then((m) => m.Modal), { ssr: false }
 )
 
-const NotionPage = ({ post }) => {
-  const zoom = isBrowser() && mediumZoom({
-    container: '.notion-viewport',
-    background: 'rgba(0, 0, 0, 0.2)',
-    scrollOffset: 200,
-    margin: getMediumZoomMargin()
-  })
+const Tweet = ({ id }) => {
+  return <TweetEmbed tweetId={id} />
+}
 
-  const zoomRef = React.useRef(zoom ? zoom.clone() : null)
+const NotionPage = ({ post, className }) => {
+//   const zoom = isBrowser() && mediumZoom({
+//     container: '.notion-viewport',
+//     background: 'rgba(0, 0, 0, 0.2)',
+//     scrollOffset: 200,
+//     margin: getMediumZoomMargin()
+//   })
 
-  React.useEffect(() => {
+  //   const zoomRef = React.useRef(zoom ? zoom.clone() : null)
+
+  useEffect(() => {
     setTimeout(() => {
       if (window.location.hash) {
         const tocNode = document.getElementById(window.location.hash.substring(1))
@@ -58,18 +64,18 @@ const NotionPage = ({ post }) => {
     setTimeout(() => {
       if (isBrowser()) {
         // 将相册gallery下的图片加入放大功能
-        const imgList = document.querySelectorAll('.notion-collection-card-cover img')
-        if (imgList && zoomRef.current) {
-          for (let i = 0; i < imgList.length; i++) {
-            (zoomRef.current).attach(imgList[i])
-          }
-        }
+        // const imgList = document.querySelectorAll('.notion-collection-card-cover img')
+        // if (imgList && zoomRef.current) {
+        //   for (let i = 0; i < imgList.length; i++) {
+        //     (zoomRef.current).attach(imgList[i])
+        //   }
+        // }
 
-        // 相册图片点击不跳转
-        const cards = document.getElementsByClassName('notion-collection-card')
-        for (const e of cards) {
-          e.removeAttribute('href')
-        }
+        // 相册图片禁止跳转页面，改为放大图片功能功能
+        // const cards = document.getElementsByClassName('notion-collection-card')
+        // for (const e of cards) {
+        //   e.removeAttribute('href')
+        // }
       }
     }, 800)
   }, [])
@@ -78,18 +84,18 @@ const NotionPage = ({ post }) => {
     return <>{post?.summary || ''}</>
   }
 
-  return <div id='container' className='max-w-5xl overflow-x-visible mx-auto'>
+  return <div id='container' className={`mx-auto ${className}`}>
     <NotionRenderer
       recordMap={post.blockMap}
       mapPageUrl={mapPageUrl}
+      mapImageUrl={mapImgUrl}
       components={{
         Code,
         Collection,
         Equation,
         Modal,
         Pdf,
-        nextImage: Image,
-        nextLink: Link
+        Tweet
       }} />
 
       <PrismMac />
@@ -107,22 +113,22 @@ const mapPageUrl = id => {
   return '/' + id.replace(/-/g, '')
 }
 
-function getMediumZoomMargin() {
-  const width = window.innerWidth
+// function getMediumZoomMargin() {
+//   const width = window.innerWidth
 
-  if (width < 500) {
-    return 8
-  } else if (width < 800) {
-    return 20
-  } else if (width < 1280) {
-    return 30
-  } else if (width < 1600) {
-    return 40
-  } else if (width < 1920) {
-    return 48
-  } else {
-    return 72
-  }
-}
+//   if (width < 500) {
+//     return 8
+//   } else if (width < 800) {
+//     return 20
+//   } else if (width < 1280) {
+//     return 30
+//   } else if (width < 1600) {
+//     return 40
+//   } else if (width < 1920) {
+//     return 48
+//   } else {
+//     return 72
+//   }
+// }
 
 export default NotionPage

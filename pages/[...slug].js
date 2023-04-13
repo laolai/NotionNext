@@ -8,6 +8,8 @@ import { idToUuid } from 'notion-utils'
 import Router from 'next/router'
 import { isBrowser } from '@/lib/utils'
 import { getNotion } from '@/lib/notion/getNotion'
+import { getPageTableOfContents } from '@/lib/notion/getPageTableOfContents'
+import md5 from 'js-md5'
 
 /**
  * 根据notion的slug访问页面
@@ -28,6 +30,11 @@ const Slug = props => {
     if (post?.password && post?.password !== '') {
       setLock(true)
     } else {
+      if (!lock && post?.blockMap?.block) {
+        post.content = Object.keys(post.blockMap.block)
+        post.toc = getPageTableOfContents(post, post.blockMap)
+      }
+
       setLock(false)
     }
   }, [post])
@@ -42,8 +49,8 @@ const Slug = props => {
           })
         }
       }
-    }, 20 * 1000)
-    const meta = { title: `${props?.siteInfo?.title || BLOG.TITLE} | loading`, image: siteInfo?.pageCover }
+    }, 8 * 1000) // 404时长 8秒
+    const meta = { title: `${props?.siteInfo?.title || BLOG.TITLE} | loading`, image: siteInfo?.pageCover || BLOG.HOME_BANNER_IMAGE }
     return <ThemeComponents.LayoutSlug {...props} showArticleInfo={true} meta={meta} />
   }
 
@@ -51,10 +58,14 @@ const Slug = props => {
    * 验证文章密码
    * @param {*} result
    */
-  const validPassword = result => {
-    if (result) {
+  const validPassword = passInput => {
+    const encrypt = md5(post.slug + passInput)
+
+    if (passInput && encrypt === post.password) {
       setLock(false)
+      return true
     }
+    return false
   }
 
   props = { ...props, lock, setLock, validPassword }
@@ -89,14 +100,13 @@ export async function getStaticPaths() {
   const from = 'slug-paths'
   const { allPages } = await getGlobalNotionData({ from })
   return {
-    paths: allPages.map(row => ({ params: { slug: [row.slug] } })),
+    paths: allPages?.map(row => ({ params: { slug: [row.slug] } })),
     fallback: true
   }
 }
 
 export async function getStaticProps({ params: { slug } }) {
   let fullSlug = slug.join('/')
-  console.log('[读取Notion]', fullSlug)
   if (BLOG.PSEUDO_STATIC) {
     if (!fullSlug.endsWith('.html')) {
       fullSlug += '.html'
@@ -111,13 +121,13 @@ export async function getStaticProps({ params: { slug } }) {
   if (!props.post) {
     const pageId = slug.slice(-1)[0]
     if (pageId.length < 32) {
-      return { props, revalidate: BLOG.NEXT_REVALIDATE_SECOND }
+      return { props, revalidate: parseInt(BLOG.NEXT_REVALIDATE_SECOND) }
     }
     const post = await getNotion(pageId)
     if (post) {
       props.post = post
     } else {
-      return { props, revalidate: BLOG.NEXT_REVALIDATE_SECOND }
+      return { props, revalidate: parseInt(BLOG.NEXT_REVALIDATE_SECOND) }
     }
   } else {
     props.post.blockMap = await getPostBlocks(props.post.id, 'slug')
@@ -138,7 +148,7 @@ export async function getStaticProps({ params: { slug } }) {
   delete props.allPages
   return {
     props,
-    revalidate: BLOG.NEXT_REVALIDATE_SECOND
+    revalidate: parseInt(BLOG.NEXT_REVALIDATE_SECOND)
   }
 }
 
